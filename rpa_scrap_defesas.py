@@ -1,7 +1,9 @@
 """
 Created on Sun Nov 23 21:31:12 2025
 
-@author: davi.hulse
+@author: davihulse
+https://github.com/davihulse/rpa_scrap_defesas
+
 """
 
 # -*- coding: utf-8 -*-
@@ -27,16 +29,13 @@ URL_DEFESAS = "https://defesas.mbx.academy/mba-usp-esalq"
 def iniciar_driver():
     options = Options()
     options.add_argument("--start-maximized")
-    # options.add_argument("--headless=new")  # se quiser rodar sem abrir janela
-
-    service = Service()  # se necessário, passar caminho do chromedriver aqui
+    # options.add_argument("--headless=new")
+    service = Service()
     driver = Chrome(service=service, options=options)
     return driver
 
-
 def acessar_pagina(driver, url):
     driver.get(url)
-    # aguarda o carregamento básico da página
     WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.TAG_NAME, "body"))
     )
@@ -51,12 +50,12 @@ def extrair_defesas(driver):
     defesas = []
 
     for i, card in enumerate(cards, start=1):
-        # Área (ex.: "Data Science e Analytics")
+        # Curso
         curso_el = card.select_one("div.at-flex p")
         curso = curso_el.get_text(strip=True) if curso_el else ""
         curso = " ".join(curso.split())
 
-        # Título da defesa (h4)
+        # Título
         titulo_el = card.select_one("h4")
         titulo = titulo_el.get_text(strip=True) if titulo_el else ""
         titulo = " ".join(titulo.split())
@@ -66,12 +65,12 @@ def extrair_defesas(driver):
         aluno = aluno_el.get_text(strip=True) if aluno_el else ""
         aluno = " ".join(aluno.split())
         
-        # Data e hora (linha "24/11/2025, 08h00min (Horário de Brasília)")
+        # Data e hora
         datahora_el = card.select_one("p.text-xxxs.font-bold.text-ctx-content-base")
         datahora_txt = datahora_el.get_text(strip=True) if datahora_el else ""
         datahora_txt = " ".join(datahora_txt.split())
 
-        # separa data e hora com regex (opcional, mas ajuda)
+        # separa data e hora com regex
         m_data = re.search(r"\b(\d{2}/\d{2}/\d{4})\b", datahora_txt)
         m_hora = re.search(r"(\d{2}h\d{2})", datahora_txt)
 
@@ -94,14 +93,11 @@ def extrair_defesas(driver):
 
     return defesas
 
-
-
 def salvar_csv(defesas):
     if not defesas:
         print("Nenhuma defesa encontrada para salvar.")
         return
 
-    # pasta relativa "Arquivos"
     pasta = "Arquivos"
     os.makedirs(pasta, exist_ok=True)
 
@@ -118,7 +114,6 @@ def salvar_csv(defesas):
 
     print(f"Arquivo CSV salvo em: {caminho_csv}")
 
-
 def salvar_csv_incremental(defesas, caminho_csv):
     if not defesas:
         return
@@ -133,283 +128,23 @@ def salvar_csv_incremental(defesas, caminho_csv):
             writer.writeheader()
         writer.writerows(defesas)
 
-
 def adicionar_aviso_final(caminho_csv):
     aviso = (
         "\n"
-        "Criado pelo aluno DSA 241: Davi Brandeburgo Hulse"
-        "Linkedin: https://www.linkedin.com/in/davihulse/pt/"
-        "Código utilizado encontra-se em: https://github.com/davihulse\n"
+        "Criado pelo aluno DSA 241: Davi Brandeburgo Hulse "
+        "Linkedin: https://www.linkedin.com/in/davihulse/pt/ "
+        "Código utilizado encontra-se em: https://github.com/davihulse/rpa_scrap_defesas "
     )
 
     with open(caminho_csv, "a", encoding="utf-8-sig") as f:
         f.write(aviso)
-
-
-
-# def main():
-#     driver = iniciar_driver()
-#     try:
-#         acessar_pagina(driver, URL_DEFESAS)
-        
-#         # 1) Abrir dropdown de datas
-#         seletor_datas = WebDriverWait(driver, 10).until(
-#             EC.element_to_be_clickable(
-#                 (By.XPATH, "(//button[@role='combobox'])[2]")
-#             )
-#         )
-
-#         driver.execute_script("arguments[0].click();", seletor_datas)
-#         sleep(1)
-        
-#         # 2) Capturar todas as opções de data
-#         opcoes_data = WebDriverWait(driver, 10).until(
-#             EC.presence_of_all_elements_located(
-#                 (By.XPATH, "//div[@role='option']")
-#             )
-#         )
-        
-#         lista_datas = [el.text.strip() for el in opcoes_data]
-        
-#         # Fechar dropdown (clicando fora)
-#         driver.execute_script("arguments[0].click();", seletor_datas)
-#         sleep(1)
-        
-#         print("\nDatas encontradas:", lista_datas)
-        
-#         # Vamos iterar cada data daqui a pouco
-
-
-#         # Definir arquivo consolidado uma vez
-#         pasta = "Arquivos"
-#         os.makedirs(pasta, exist_ok=True)
-    
-#         timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-#         nome_arquivo = f"defesas_mba_usp_esalq_{timestamp}.csv"
-#         caminho_csv = os.path.join(pasta, nome_arquivo)
-    
-#         for data_texto in lista_datas:
-#             print(f"\n🔵 Selecionando data: {data_texto}")
-    
-#             # garantir que o seletor de datas esteja aberto
-#             seletor_datas = WebDriverWait(driver, 10).until(
-#                 EC.presence_of_element_located((By.XPATH, "(//button[@role='combobox'])[2]"))
-#             )
-#             estado = seletor_datas.get_attribute("aria-expanded")
-#             if estado == "false":
-#                 driver.execute_script("arguments[0].click();", seletor_datas)
-#                 sleep(0.5)
-    
-#             WebDriverWait(driver, 10).until(
-#                 EC.presence_of_all_elements_located((By.XPATH, "//div[@role='option']"))
-#             )
-#             opcoes = driver.find_elements(By.XPATH, "//div[@role='option']")
-    
-#             opcao = None
-#             for el in opcoes:
-#                 if el.text.strip() == data_texto:
-#                     opcao = el
-#                     break
-    
-#             if opcao is None:
-#                 print(f"⚠️ Data não encontrada no dropdown: {data_texto}")
-#                 continue
-    
-#             driver.execute_script("arguments[0].click();", opcao)
-#             sleep(1)
-    
-#             # Selecionar "Todos os horários"
-#             seletor_horario = WebDriverWait(driver, 10).until(
-#                 EC.element_to_be_clickable((By.XPATH, "(//button[@role='combobox'])[3]"))
-#             )
-#             driver.execute_script("arguments[0].click();", seletor_horario)
-#             sleep(0.5)
-    
-#             opcao_todos = WebDriverWait(driver, 10).until(
-#                 EC.element_to_be_clickable(
-#                     (By.XPATH, "//div[@role='option' and contains(., 'Todos os horários')]")
-#                 )
-#             )
-#             driver.execute_script("arguments[0].click();", opcao_todos)
-#             sleep(1)
-    
-#             # carregar todos os cards usando "Ver mais"
-#             while True:
-#                 try:
-#                     botao = WebDriverWait(driver, 3).until(
-#                         EC.presence_of_element_located(
-#                             (By.XPATH, "//button[contains(., 'Ver mais')]")
-#                         )
-#                     )
-#                 except:
-#                     break
-    
-#                 cards_antes = len(driver.find_elements(
-#                     By.CSS_SELECTOR,
-#                     "div.overflow-hidden.rounded-sm.bg-ctx-layout-surface"
-#                 ))
-    
-#                 try:
-#                     driver.execute_script("arguments[0].click();", botao)
-#                 except:
-#                     break
-    
-#                 cards_depois = cards_antes
-#                 for _ in range(3):
-#                     sleep(1)
-#                     cards_depois = len(driver.find_elements(
-#                         By.CSS_SELECTOR,
-#                         "div.overflow-hidden.rounded-sm.bg-ctx-layout-surface"
-#                     ))
-#                     if cards_depois > cards_antes:
-#                         break
-    
-#                 if cards_depois <= cards_antes:
-#                     break
-
-# # Tentativas de extrair até encontrar 20h30
-# tentativas = 0
-# max_tentativas = 3
-
-# while True:
-#     tentativas += 1
-#     print(f"   → Tentativa {tentativas} para {data_texto}")
-
-#     # extrair defesas daquele dia
-#     defesas_dia = extrair_defesas(driver)
-
-#     # validar
-#     horas = [d.get("hora", "") for d in defesas_dia if d.get("hora")]
-
-#     if "20h30" in horas:
-#         print(f"   ✔ Defesa das 20h30 encontrada para {data_texto}.")
-#         salvar_csv_incremental(defesas_dia, caminho_csv)
-#         break
-
-#     # se chegou aqui → não houve 20h30
-#     ultima_hora = max(horas) if horas else "nenhuma"
-#     print(f"   ⚠ Defesa das 20h30 NÃO encontrada (último horário: {ultima_hora}). Recarregando...")
-
-#     if tentativas >= max_tentativas:
-#         print(f"   ❗ Máximo de tentativas atingido para {data_texto}. Salvando mesmo assim.")
-#         salvar_csv_incremental(defesas_dia, caminho_csv)
-#         break
-
-#     # RECARREGAR OS DADOS DA DATA — repetir o FOR da data
-#     # Reabrir seletor de datas
-#     seletor_datas = WebDriverWait(driver, 10).until(
-#         EC.presence_of_element_located((By.XPATH, "(//button[@role='combobox'])[2]"))
-#     )
-#     estado = seletor_datas.get_attribute("aria-expanded")
-#     if estado == "false":
-#         driver.execute_script("arguments[0].click();", seletor_datas)
-#         sleep(0.5)
-
-#     # clicar novamente na opção da data
-#     WebDriverWait(driver, 10).until(
-#         EC.presence_of_all_elements_located((By.XPATH, "//div[@role='option']"))
-#     )
-#     opcoes = driver.find_elements(By.XPATH, "//div[@role='option']")
-
-#     for el in opcoes:
-#         if el.text.strip() == data_texto:
-#             driver.execute_script("arguments[0].click();", el)
-#             break
-
-#     sleep(1)
-
-#     # Selecionar novamente todos os horários
-#     seletor_horario = WebDriverWait(driver, 10).until(
-#         EC.element_to_be_clickable((By.XPATH, "(//button[@role='combobox'])[3]"))
-#     )
-#     driver.execute_script("arguments[0].click();", seletor_horario)
-#     sleep(0.5)
-
-#     opcao_todos = WebDriverWait(driver, 10).until(
-#         EC.element_to_be_clickable(
-#             (By.XPATH, "//div[@role='option' and contains(., 'Todos os horários')]")
-#         )
-#     )
-#     driver.execute_script("arguments[0].click();", opcao_todos)
-#     sleep(1)
-
-#     # Clicar novamente em "Ver mais" até carregar tudo
-#     while True:
-#         try:
-#             botao = WebDriverWait(driver, 3).until(
-#                 EC.presence_of_element_located(
-#                     (By.XPATH, "//button[contains(., 'Ver mais')]")
-#                 )
-#             )
-#         except:
-#             break
-
-#         cards_antes = len(driver.find_elements(
-#             By.CSS_SELECTOR,
-#             "div.overflow-hidden.rounded-sm.bg-ctx-layout-surface"
-#         ))
-
-#         try:
-#             driver.execute_script("arguments[0].click();", botao)
-#         except:
-#             break
-
-#         cards_depois = cards_antes
-#         for _ in range(3):
-#             sleep(1)
-#             cards_depois = len(driver.find_elements(
-#                 By.CSS_SELECTOR,
-#                 "div.overflow-hidden.rounded-sm.bg-ctx-layout-surface"
-#             ))
-#             if cards_depois > cards_antes:
-#                 break
-
-#         if cards_depois <= cards_antes:
-#             break
-
-
-
-
-
-
-
-
-    
-#             # extrai só daquela data
-#             defesas_dia = extrair_defesas(driver)
-            
-#             # --- AVISO SOBRE HORÁRIO FINAL ---
-#             if not defesas_dia:
-#                 print(f"⚠️ Atenção: nenhum card de defesa encontrado para o dia {data_texto}.")
-#             else:
-#                 horas = [d.get("hora", "") for d in defesas_dia if d.get("hora")]
-            
-#                 if not horas:
-#                     print(f"⚠️ Atenção: no dia {data_texto} não foi possível identificar horários das defesas.")
-#                 else:
-#                     ultima_hora = max(horas)
-#                     if "20h30" not in horas:
-#                         print(f"⚠️ Atenção: no dia {data_texto} não há defesa às 20h30. Último horário encontrado: {ultima_hora}")
-#             # --- FIM DO AVISO ---
-            
-#             # salva incrementalmente no CSV final
-#             salvar_csv_incremental(defesas_dia, caminho_csv)
-    
-#         print(f"\n✅ Arquivo consolidado salvo em: {caminho_csv}")
-    
-
-
-
-#     finally:
-#         driver.quit()
-
 
 def main():
     driver = iniciar_driver()
     try:
         acessar_pagina(driver, URL_DEFESAS)
         
-        # 1) Abrir dropdown de datas
+        # 1) Abrir dropdown datas
         seletor_datas = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable(
                 (By.XPATH, "(//button[@role='combobox'])[2]")
@@ -418,7 +153,7 @@ def main():
         driver.execute_script("arguments[0].click();", seletor_datas)
         sleep(1)
         
-        # 2) Capturar todas as opções de data
+        # 2) Capturar todas opções de data
         opcoes_data = WebDriverWait(driver, 10).until(
             EC.presence_of_all_elements_located(
                 (By.XPATH, "//div[@role='option']")
@@ -540,19 +275,128 @@ def main():
                 tem_2030 = "20h30" in horas
                 ultima_hora = max(horas) if horas else "nenhuma"
 
+                # VERIFICAÇÃO DO 20h30
                 if tem_2030:
                     print(f"   ✔ Defesa das 20h30 encontrada para {data_texto}. Último horário: {ultima_hora}")
                     salvar_csv_incremental(defesas_dia, caminho_csv)
                     break
-                else:
-                    print(f"   ⚠ Defesa das 20h30 NÃO encontrada para {data_texto}. Último horário: {ultima_hora}")
-                    if tentativas >= max_tentativas:
-                        print(f"   ❗ Máximo de tentativas atingido para {data_texto}. Salvando mesmo assim.")
-                        salvar_csv_incremental(defesas_dia, caminho_csv)
-                        break
-                    else:
-                        print("   ↻ Recarregando dados da data e tentando novamente...")
-                        continue
+                                
+                # COLETAR HORÁRIO POR HORÁRIO QUANDO NÃO CONSEGUE EXTRAIR TUDO
+                                
+                print(f"   ⚠ Não encontrou 20h30. Iniciando extração por horário para {data_texto}...")
+                
+                sleep(1)
+                
+                # --- Abrir dropdown de horários ---
+                seletor_horario = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, "(//button[@role='combobox'])[3]"))
+                )
+                driver.execute_script("arguments[0].click();", seletor_horario)
+                sleep(1)
+                
+                # --- Capturar todos os horários disponíveis ---
+                lista_opcoes_horario = WebDriverWait(driver, 10).until(
+                    EC.presence_of_all_elements_located((By.XPATH, "//div[@role='option']"))
+                )
+                
+                horarios = [el.text.strip() for el in lista_opcoes_horario if el.text.strip()]
+                print(f"   → Horários encontrados: {horarios}")
+                
+                # extrair agora horário por horário
+                defesas_dia_completa = []
+                
+                for horario in horarios:
+                    print(f"      → Extraindo horário: {horario}")
+                
+                    # reabrir dropdown
+                    seletor_horario = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, "(//button[@role='combobox'])[3]"))
+                    )
+                    driver.execute_script("arguments[0].click();", seletor_horario)
+                    sleep(0.5)
+                
+                    # selecionar o horário desejado
+                    item_horario = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable(
+                            (By.XPATH, f"//div[@role='option' and contains(., '{horario}')]")
+                        )
+                    )
+                    driver.execute_script("arguments[0].click();", item_horario)
+                    sleep(1)
+                
+                    # carregar TODOS os cards desse horário ; "Ver mais"
+                    while True:
+                        try:
+                            botao = WebDriverWait(driver, 3).until(
+                                EC.presence_of_element_located(
+                                    (By.XPATH, "//button[contains(., 'Ver mais')]")
+                                )
+                            )
+                        except:
+                            # não há botão "Ver mais" visível
+                            break
+                
+                        cards_antes = len(driver.find_elements(
+                            By.CSS_SELECTOR,
+                            "div.overflow-hidden.rounded-sm.bg-ctx-layout-surface"
+                        ))
+                
+                        try:
+                            driver.execute_script("arguments[0].click();", botao)
+                        except:
+                            break
+                
+                        cards_depois = cards_antes
+                        for _ in range(3):
+                            sleep(1)
+                            cards_depois = len(driver.find_elements(
+                                By.CSS_SELECTOR,
+                                "div.overflow-hidden.rounded-sm.bg-ctx-layout-surface"
+                            ))
+                            if cards_depois > cards_antes:
+                                break
+                
+                        # se depois de tentar não entrou card novo, encerra
+                        if cards_depois <= cards_antes:
+                            break
+                
+                    # agora extrai os cards desse horário já com tudo carregado
+                    lote = extrair_defesas(driver)
+                    defesas_dia_completa.extend(lote)
+                    
+                    print(f"      → Extraindo horário: {horario}")
+                
+                    # reabrir dropdown (sempre precisa)
+                    seletor_horario = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, "(//button[@role='combobox'])[3]"))
+                    )
+                    driver.execute_script("arguments[0].click();", seletor_horario)
+                    sleep(0.5)
+                
+                    # selecionar o horário desejado
+                    item_horario = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, f"//div[@role='option' and contains(., '{horario}')]"))
+                    )
+                    driver.execute_script("arguments[0].click();", item_horario)
+                    sleep(1)
+                                
+                    lote = extrair_defesas(driver)
+                    defesas_dia_completa.extend(lote)
+                
+                # eliminar duplicatas (mesmo horário pode repetir)
+                # manter curso/titulo/aluno como chave
+                vis = set()
+                sem_dupes = []
+                for d in defesas_dia_completa:
+                    chave = (d["curso"], d["titulo"], d["aluno"], d["data"], d["hora"])
+                    if chave not in vis:
+                        vis.add(chave)
+                        sem_dupes.append(d)
+                
+                print(f"   ✔ Extração por horário concluída. Total de itens: {len(sem_dupes)}")
+                
+                salvar_csv_incremental(sem_dupes, caminho_csv)
+                break
 
         print(f"\n✅ Arquivo consolidado salvo em: {caminho_csv}")
         
@@ -562,10 +406,5 @@ def main():
     finally:
         driver.quit()
 
-
-
 if __name__ == "__main__":
     main()
-
-#%%
-
